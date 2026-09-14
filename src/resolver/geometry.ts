@@ -1,4 +1,4 @@
-import { SurfaceProfile, ResolvedElement, SafeArea } from '../core/types';
+import type { SurfaceProfile, ResolvedElement } from '../core/types';
 
 export interface Rect {
   x: number;
@@ -25,7 +25,7 @@ export function contains(outer: Rect, inner: Rect): boolean {
   );
 }
 
-export function intersects(a: Rect, b: Rect): boolean {
+export function overlaps(a: Rect, b: Rect): boolean {
   return (
     a.x < b.x + b.width &&
     a.x + a.width > b.x &&
@@ -35,10 +35,9 @@ export function intersects(a: Rect, b: Rect): boolean {
 }
 
 export function hasAnyOverlap(elements: ResolvedElement[]): boolean {
-  const visible = elements.filter(e => !e.hidden);
-  for (let i = 0; i < visible.length; i++) {
-    for (let j = i + 1; j < visible.length; j++) {
-      if (intersects(visible[i], visible[j])) {
+  for (let i = 0; i < elements.length; i++) {
+    for (let j = i + 1; j < elements.length; j++) {
+      if (overlaps(elements[i], elements[j])) {
         return true;
       }
     }

@@ -1,0 +1,196 @@
+.dom-renderer-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #1a1a2e; /* Darker technical background */
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.rendered-element {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* Visual styling is allowed here as per rules */
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.rendered-element:hover {
+  border-color: rgba(94, 234, 212, 0.5); /* Teal accent on hover */
+  box-shadow: 0 0 15px rgba(94, 234, 212, 0.1);
+}
+
+/* Element specific styling */
+.role-hero-image {
+  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+  z-index: 1; /* Hero might be overlay */
+  border: none;
+}
+
+.role-hero-image .content-hero {
+  width: 100%;
+  height: 100%;
+  background-image: url('../assets/hero.png');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.8;
+  mix-blend-mode: overlay;
+}
+
+.role-headline {
+  font-weight: 800;
+  font-size: 1.5rem;
+  text-align: left;
+  padding: 0 16px;
+  justify-content: flex-start;
+  background: transparent;
+  border: none;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  letter-spacing: -0.02em;
+}
+
+.role-body {
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.7);
+  text-align: left;
+  padding: 0 16px;
+  justify-content: flex-start;
+  background: transparent;
+  border: none;
+}
+
+.role-cta {
+  background: transparent;
+  border: none;
+}
+
+.content-cta {
+  width: 100%;
+  height: 100%;
+  background: #5eead4;
+  color: #0f172a;
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.content-cta:hover {
+  background: #2dd4bf;
+  transform: scale(1.02);
+}
+
+.role-logo {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.15);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+  border-radius: 4px;
+}
+
+/* Unsatisfiable State */
+.renderer-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(220, 38, 38, 0.05),
+    rgba(220, 38, 38, 0.05) 10px,
+    rgba(153, 27, 27, 0.05) 10px,
+    rgba(153, 27, 27, 0.05) 20px
+  );
+  border: 2px dashed #dc2626;
+  border-radius: 8px;
+  color: #fca5a5;
+  padding: 24px;
+  text-align: center;
+}
+
+.renderer-error h2 {
+  margin: 0 0 16px 0;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  color: #ef4444;
+}
+
+.renderer-violations p {
+  margin: 4px 0;
+  font-size: 0.875rem;
+  font-family: monospace;
+}
+
+.renderer-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255,255,255,0.3);
+  font-family: monospace;
+}
+
+/* Debug Mode Overlays */
+.debug-mode .rendered-element {
+  border: 1px solid #fbbf24 !important;
+  background: rgba(251, 191, 36, 0.05) !important;
+}
+
+.debug-mode .role-cta {
+  border: 1px dashed #ef4444 !important; /* highlight tap targets */
+  background: rgba(239, 68, 68, 0.05) !important;
+}
+
+.debug-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-family: monospace;
+  font-size: 10px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 20;
+}
+
+.rendered-element:hover .debug-overlay {
+  opacity: 1;
+}
+
+.debug-id {
+  background: #fbbf24;
+  color: #000;
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.debug-geom {
+  background: rgba(0,0,0,0.8);
+  padding: 2px 4px;
+  border-radius: 2px;
+}

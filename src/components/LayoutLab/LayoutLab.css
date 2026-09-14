@@ -1,0 +1,180 @@
+.layout-lab {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #0f111a;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+.lab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: #1a1d2d;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lab-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.lab-title h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.badge {
+  background: rgba(94, 234, 212, 0.1);
+  color: #5eead4;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(94, 234, 212, 0.2);
+}
+
+.header-controls .toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.lab-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+}
+
+.surface-panel {
+  width: 320px;
+  flex-shrink: 0;
+  background-color: #131520;
+}
+
+.renderer-panel {
+  flex: 1;
+  background-color: #0b0c13;
+  position: relative;
+}
+
+.inspector-panel {
+  width: 380px;
+  flex-shrink: 0;
+  background-color: #131520;
+  border-right: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.canvas-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 40px;
+}
+
+.surface-bounds {
+  position: relative;
+  background: #1a1a2e;
+  border-radius: 2px; /* Surfaces generally have sharp or small rounded corners */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1);
+  /* Use transition so the canvas interpolates smoothly when resizing */
+  transition: width 0.3s ease, height 0.3s ease;
+  overflow: hidden;
+}
+
+.safe-area-bounds {
+  position: absolute;
+  border: 1px dashed rgba(239, 68, 68, 0.5); /* Red dashed safe area */
+  pointer-events: none;
+  z-index: 999;
+}
+
+.lab-paradigm {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin: 0;
+  font-style: italic;
+}
+
+.canvas-metrics {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #5eead4;
+  background: rgba(94, 234, 212, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.resolution-metrics {
+  display: flex;
+  gap: 12px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.resolution-metrics span {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+}
+
+.resolution-metrics strong {
+  color: #5eead4;
+  font-size: 0.85rem;
+}
+
+/* Scrollbar styling for panels */
+.panel::-webkit-scrollbar {
+  width: 8px;
+}
+.panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.panel::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+.panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.2);
+}

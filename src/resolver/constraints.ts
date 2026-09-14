@@ -1,4 +1,4 @@
-import { CandidateLayout, SurfaceProfile, DiagnosticEvent } from '../core/types';
+import type { CandidateLayout, SurfaceProfile, DiagnosticEvent, AdSpec } from '../core/types';
 import { getSafeBounds, contains, hasAnyOverlap } from './geometry';
 
 export interface ConstraintEvaluationResult {
@@ -7,8 +7,8 @@ export interface ConstraintEvaluationResult {
   diagnostics: DiagnosticEvent[];
 }
 
-export function evaluateHardConstraints(candidate: CandidateLayout, surface: SurfaceProfile): ConstraintEvaluationResult {
-  const violations: string[] = [];
+export function evaluateHardConstraints(candidate: CandidateLayout, surface: SurfaceProfile, ad: AdSpec): ConstraintEvaluationResult {
+  const violations: string[] = [...candidate.violations];
   const diagnostics: DiagnosticEvent[] = [];
   const safeBounds = getSafeBounds(surface);
 
@@ -17,60 +17,48 @@ export function evaluateHardConstraints(candidate: CandidateLayout, surface: Sur
   // 1. Bounds checking
   for (const el of visibleElements) {
     if (!contains(safeBounds, el)) {
-      const msg = `Element ${el.originalId} is outside safe visible bounds.`;
-      violations.push(msg);
-      diagnostics.push({
-        type: 'CONSTRAINT_VIOLATED',
-        elementId: el.originalId,
-        candidateId: candidate.id,
-        constraint: 'BOUNDS',
-        reason: msg
-      });
+      violations.push(`Element ${el.originalId} is outside safe visible bounds.`);
     }
   }
 
   // 2. Overlap checking
   if (hasAnyOverlap(visibleElements)) {
-    const msg = `Candidate ${candidate.id} has overlapping elements.`;
-    violations.push(msg);
-    diagnostics.push({
-      type: 'CONSTRAINT_VIOLATED',
-      candidateId: candidate.id,
-      constraint: 'OVERLAP',
-      reason: msg
-    });
+    violations.push(`Candidate ${candidate.id} has overlapping elements.`);
   }
 
-  // 3. Minimum tap targets for interactive roles
-  const interactiveRoles = ['cta', 'link'];
-  for (const el of visibleElements) {
-    if (interactiveRoles.includes(el.role)) {
-      // Find constraints from ad spec (since resolved element lost it, we might need to pass it or check against a fixed baseline, wait, let's keep it simple: min size > 0)
-      if (el.width <= 0 || el.height <= 0) {
-        const msg = `Element ${el.originalId} has invalid dimensions (${el.width}x${el.height}).`;
-        violations.push(msg);
-        diagnostics.push({
-          type: 'CONSTRAINT_VIOLATED',
-          elementId: el.originalId,
-          constraint: 'DIMENSIONS',
-          reason: msg
-        });
+  // 3. Tap targets for CTAs
+  if (surface.interactionModel === 'touch') {
+    for (const el of visibleElements.filter(e => e.role === 'cta')) {
+      const minTap = surface.viewingDistance === 'near' ? 44 : 60;
+      if (el.width < minTap || el.height < minTap) {
+        violations.push(`CTA ${el.originalId} violates minimum tap target size (${minTap}px).`);
       }
     }
   }
 
-  // 4. Positive dimensions for all
+  // 4. Element specific constraints (minWidth, minHeight)
   for (const el of visibleElements) {
+    const spec = ad.elements.find(e => e.id === el.originalId);
+    if (spec) {
+      if (spec.constraints.minWidth && el.width < spec.constraints.minWidth) {
+        violations.push(`Element ${el.originalId} is narrower than minWidth.`);
+      }
+      if (spec.constraints.minHeight && el.height < spec.constraints.minHeight) {
+        violations.push(`Element ${el.originalId} is shorter than minHeight.`);
+      }
+    }
+    
     if (el.width <= 0 || el.height <= 0) {
       violations.push(`Element ${el.originalId} has non-positive dimensions.`);
     }
   }
 
   const isValid = violations.length === 0;
+  
   if (isValid) {
     diagnostics.push({
       type: 'CONSTRAINT_SATISFIED',
-      candidateId: candidate.id,
+      action: 'NO_ACTION',
       reason: 'All hard constraints satisfied.'
     });
   }

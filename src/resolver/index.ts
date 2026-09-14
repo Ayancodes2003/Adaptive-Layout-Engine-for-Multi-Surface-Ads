@@ -1,15 +1,24 @@
-import { AdSpec, SurfaceProfile, ResolvedLayout, CandidateLayout, DiagnosticEvent } from '../core/types';
-import { VerticalStackCandidate } from './candidates';
+import type { AdSpec, SurfaceProfile, ResolvedLayout, CandidateLayout, DiagnosticEvent, TextMeasurer } from '../core/types';
+import { VerticalStackCandidate, HorizontalSplitCandidate, HeroOverlayCandidate } from './candidates';
 import { DegradationEngine } from './degradation';
 import { scoreCandidate } from './scoring';
 
 export class LayoutResolver {
+  private measurer?: TextMeasurer;
+
+  constructor(measurer?: TextMeasurer) {
+    this.measurer = measurer;
+  }
+
   public resolve(ad: AdSpec, surface: SurfaceProfile): ResolvedLayout {
     const startTime = Date.now();
     
     // 1. Generators
-    const verticalGen = new VerticalStackCandidate();
-    const generators = [verticalGen];
+    const generators = [
+      new VerticalStackCandidate(this.measurer),
+      new HorizontalSplitCandidate(this.measurer),
+      new HeroOverlayCandidate(this.measurer)
+    ];
     
     let bestCandidate: CandidateLayout | undefined;
     const failedAttempts: CandidateLayout[] = [];
@@ -24,12 +33,12 @@ export class LayoutResolver {
         alternativesEvaluated++;
         
         // 3. Degradation Loop
-        const engine = new DegradationEngine(gen);
+        const engine = new DegradationEngine(gen, this.measurer);
         const resolved = engine.applyDegradationLoop(initial, ad, surface);
         
         if (resolved.isValid) {
           // 4. Scoring
-          scoreCandidate(resolved, surface);
+          scoreCandidate(resolved);
           
           if (!bestCandidate || resolved.score > bestCandidate.score) {
             bestCandidate = resolved;

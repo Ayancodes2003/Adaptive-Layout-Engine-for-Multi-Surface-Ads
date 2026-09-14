@@ -1,87 +1,137 @@
-import { CandidateLayout, AdSpec, SurfaceProfile, ResolvedElement, DiagnosticEvent } from '../core/types';
+import type { CandidateLayout, AdSpec, SurfaceProfile, ResolvedElement, TextMeasurer } from '../core/types';
 import { evaluateHardConstraints } from './constraints';
-import { CandidateGenerator } from './candidates'; // Need to define an interface or base class for regenerate
+import type { CandidateGenerator } from './candidates';
 
 export class DegradationEngine {
-  constructor(private generator: { regenerate: (ad: AdSpec, surface: SurfaceProfile, override: Map<string, ResolvedElement>) => CandidateLayout }) {}
+  private generator: CandidateGenerator;
+  private measurer?: TextMeasurer;
+
+  public constructor(generator: CandidateGenerator, measurer?: TextMeasurer) {
+    this.generator = generator;
+    this.measurer = measurer;
+  }
 
   public applyDegradationLoop(
     initialCandidate: CandidateLayout, 
-    ad: AdSpec, 
+    ad: AdSpec,
     surface: SurfaceProfile
   ): CandidateLayout {
     let currentCandidate = initialCandidate;
-    let evalResult = evaluateHardConstraints(currentCandidate, surface);
+    let evalResult = evaluateHardConstraints(currentCandidate, surface, ad);
 
     if (evalResult.isValid) {
+      currentCandidate.isValid = true;
       currentCandidate.diagnostics.push(...evalResult.diagnostics);
       return currentCandidate;
     }
 
-    // Sort elements by priority (descending numerical value so lowest priority goes first)
-    const sortedElements = [...ad.elements].sort((a, b) => b.priority - a.priority);
-    const elementStateOverride = new Map<string, ResolvedElement>();
-    
-    // Copy current state
-    currentCandidate.elements.forEach(el => elementStateOverride.set(el.originalId, { ...el }));
+    // Sort elements by priority ascending (lowest priority degrades first)
+    const elementsToDegrade = [...ad.elements].sort((a, b) => b.priority - a.priority);
 
-    for (const adEl of sortedElements) {
-      const state = elementStateOverride.get(adEl.id)!;
-      
-      for (const op of adEl.allowedDegradations) {
-        if (op === 'HIDE' && !state.hidden) {
-          state.hidden = true;
-          state.degradationsApplied.push('HIDE');
+    const elementStateOverride = new Map<string, ResolvedElement>();
+    for (const el of initialCandidate.elements) {
+      elementStateOverride.set(el.originalId, { ...el });
+    }
+
+    const tryDegrade = (
+      adEl: AdSpec['elements'][0], 
+      action: 'WRAP' | 'TRUNCATE' | 'SHRINK' | 'HIDE',
+      mutator: (state: ResolvedElement) => boolean
+    ) => {
+      if (adEl.allowedDegradations.includes(action)) {
+        const state = elementStateOverride.get(adEl.id);
+        if (state && !state.hidden) {
+          const changed = mutator(state);
+          if (!changed) return false;
+
+          state.degradationsApplied.push(action);
           
           const newCandidate = this.generator.regenerate(ad, surface, elementStateOverride);
-          const newEval = evaluateHardConstraints(newCandidate, surface);
+          const newEval = evaluateHardConstraints(newCandidate, surface, ad);
           
           if (newEval.isValid) {
+            newCandidate.isValid = true;
             newCandidate.diagnostics.push({
               type: 'DEGRADATION_APPLIED',
               elementId: adEl.id,
-              candidateId: newCandidate.id,
-              action: 'HIDE',
-              priority: adEl.priority,
-              reason: `Hid element ${adEl.id} to satisfy constraints.`
+              action: action,
+              reason: `Applied ${action} to fit bounds.`,
+              priority: adEl.priority
             });
-            return newCandidate;
+            currentCandidate = newCandidate;
+            return true;
           }
+          currentCandidate = newCandidate;
         }
+      }
+      return false;
+    };
+
+    // Progression: WRAP -> TRUNCATE -> SHRINK -> HIDE
+    for (const action of ['WRAP', 'TRUNCATE', 'SHRINK', 'HIDE'] as const) {
+      for (const adEl of elementsToDegrade) {
+        let satisfied = false;
         
-        // Could implement SHRINK, TRUNCATE, etc. in a similar monotonic way
-        if (op === 'SHRINK' && state.width > (adEl.constraints.minWidth || 0)) {
-           // Basic shrink logic
-           const oldWidth = state.width;
-           state.width = Math.max(state.width * 0.8, adEl.constraints.minWidth || 0);
-           state.degradationsApplied.push('SHRINK');
-           
-           const newCandidate = this.generator.regenerate(ad, surface, elementStateOverride);
-           const newEval = evaluateHardConstraints(newCandidate, surface);
-           
-           if (newEval.isValid) {
-              newCandidate.diagnostics.push({
-                type: 'DEGRADATION_APPLIED',
-                elementId: adEl.id,
-                action: 'SHRINK',
-                before: `width:${oldWidth}`,
-                after: `width:${state.width}`,
-                reason: `Shrunk element ${adEl.id} to satisfy constraints.`
-              });
-              return newCandidate;
-           }
+        switch (action) {
+          case 'WRAP':
+            satisfied = tryDegrade(adEl, 'WRAP', (state) => {
+              if (!this.measurer || !state.fontSize || state.lines === undefined) return false;
+              // To wrap, we reduce width artificially to force more lines (handled by generator)
+              // But actually in this model, WRAP means we allow the element width to shrink, 
+              // and let the generator's measureElement increase the height.
+              // We'll simulate width reduction.
+              if (state.width > (adEl.constraints.minWidth || 20)) {
+                state.width = Math.max(adEl.constraints.minWidth || 20, state.width * 0.9);
+                return true; // Width changed, generator will recalculate height
+              }
+              return false;
+            });
+            break;
+            
+          case 'TRUNCATE':
+            satisfied = tryDegrade(adEl, 'TRUNCATE', (state) => {
+               if (state.lines === undefined || state.lines <= 1) return false;
+               const maxLines = adEl.constraints.maxLines || 1;
+               if (state.lines > maxLines) {
+                  // We simulate truncation by just forcing the height to the maxLines height
+                  if (this.measurer && state.fontSize) {
+                    // It's a bit of a hack without full layout engine, but sufficient for Phase 3
+                    state.height = (state.fontSize * 1.2) * maxLines;
+                    state.lines = maxLines;
+                    return true;
+                  }
+               }
+               return false;
+            });
+            break;
+            
+          case 'SHRINK':
+            satisfied = tryDegrade(adEl, 'SHRINK', (state) => {
+              const oldW = state.width;
+              const oldH = state.height;
+              state.width = Math.max(adEl.constraints.minWidth || 20, state.width * 0.8);
+              state.height = Math.max(adEl.constraints.minHeight || 20, state.height * 0.8);
+              if (state.fontSize) {
+                state.fontSize = Math.max(adEl.constraints.minFontSize || 10, state.fontSize * 0.8);
+              }
+              return oldW !== state.width || oldH !== state.height;
+            });
+            break;
+            
+          case 'HIDE':
+            satisfied = tryDegrade(adEl, 'HIDE', (state) => {
+              state.hidden = true;
+              return true;
+            });
+            break;
+        }
+
+        if (satisfied) {
+          return currentCandidate;
         }
       }
     }
 
-    // If we exhaust all degradations and it still fails
-    currentCandidate.isValid = false;
-    currentCandidate.violations = evalResult.violations;
-    currentCandidate.diagnostics.push({
-      type: 'CANDIDATE_REJECTED',
-      candidateId: currentCandidate.id,
-      reason: 'Exhausted all degradation options, candidate remains invalid.'
-    });
-    return currentCandidate;
+    return currentCandidate; // Still invalid, returns best-effort
   }
 }

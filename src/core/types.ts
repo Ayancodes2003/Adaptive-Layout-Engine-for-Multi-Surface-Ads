@@ -17,7 +17,18 @@ export type DegradationOperation =
   | 'REPOSITION'
   | 'REFLOW'
   | 'TRUNCATE'
-  | 'HIDE';
+  | 'HIDE'
+  | 'WRAP';
+
+export interface TextMeasurement {
+  width: number;
+  height: number;
+  lines: number;
+}
+
+export interface TextMeasurer {
+  measureText(text: string, fontSize: number, fontWeight: string, maxWidth?: number): TextMeasurement;
+}
 
 export interface ElementConstraint {
   minWidth?: number;
@@ -27,6 +38,7 @@ export interface ElementConstraint {
   aspectRatio?: number;
   minTapTarget?: number; // E.g., 44px for accessibility
   minFontSize?: number;
+  maxLines?: number; // Added for text truncation policy
 }
 
 export interface AdElement {
@@ -36,6 +48,8 @@ export interface AdElement {
   content: string; // URL for image, text for text elements
   constraints: ElementConstraint;
   allowedDegradations: DegradationOperation[];
+  fontSize?: number; // Initial ideal font size
+  fontWeight?: string;
 }
 
 export interface AdSpec {
@@ -59,8 +73,10 @@ export interface SurfaceProfile {
   width: number;
   height: number;
   safeArea: SafeArea;
-  interactionModel: 'touch' | 'mouse' | 'view-only';
+  interactionModel: 'touch' | 'mouse' | 'view-only' | 'none';
   viewingDistance: 'near' | 'far'; // Could influence text sizes
+  minTapTarget?: number;
+  minTextSize?: number;
 }
 
 export interface ResolvedElement {
@@ -71,6 +87,7 @@ export interface ResolvedElement {
   width: number;
   height: number;
   fontSize?: number;
+  lines?: number;
   degradationsApplied: DegradationOperation[];
   hidden: boolean;
   priority: number;
@@ -95,10 +112,18 @@ export interface DiagnosticEvent {
   reason: string;
 }
 
+export interface CandidateScore {
+  total: number;
+  priorityPreservation: number;
+  spaceUtilization: number;
+  degradationCost: number;
+}
+
 export interface CandidateLayout {
   id: string;
   type: 'vertical-stack' | 'horizontal-split' | 'hero-overlay' | 'compact-strip';
   score: number;
+  detailedScore?: CandidateScore;
   elements: ResolvedElement[];
   isValid: boolean;
   violations: string[]; // Hard constraints failed
@@ -115,3 +140,4 @@ export interface ResolvedLayout {
   computationTimeMs: number;
   diagnostics: DiagnosticEvent[];
 }
+

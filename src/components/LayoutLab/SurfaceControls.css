@@ -1,0 +1,85 @@
+.surface-controls {
+  background: #1e1e2f;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.surface-controls h3 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.preset-btn {
+  background: #2d2d44;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #cbd5e1;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.preset-btn:hover {
+  background: #3b3b54;
+}
+
+.preset-btn.active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #60a5fa;
+}
+
+.preset-btn.custom-btn.active {
+  background: #8b5cf6;
+  border-color: #a78bfa;
+}
+
+.custom-controls {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.custom-controls.expanded {
+  display: flex;
+}
+
+.custom-controls h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-group label {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  font-family: monospace;
+}
+
+.control-group input[type="range"] {
+  width: 100%;
+  accent-color: #8b5cf6;
+}

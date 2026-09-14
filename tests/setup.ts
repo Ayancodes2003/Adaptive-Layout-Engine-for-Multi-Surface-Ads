@@ -1,1 +1,1 @@
-import '@testing-library/jest-dom'
+// Node environment setup for pure functions
