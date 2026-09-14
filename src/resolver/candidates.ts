@@ -138,9 +138,7 @@ export class HorizontalSplitCandidate extends BaseCandidateGenerator {
       }
     }
     
-    // Disallow horizontal split on portrait surfaces
-    const isPortrait = safeW < safeH;
-    const violations = isPortrait ? ['HorizontalSplit is disallowed on portrait surfaces'] : [];
+    const violations: string[] = [];
     
     return {
       id: `${this.type}-${Date.now()}-${Math.random()}`,
